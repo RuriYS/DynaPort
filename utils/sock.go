@@ -3,8 +3,8 @@ package utils
 import (
 	"log/slog"
 
+	"github.com/RuriYS/DynaPorts/types"
 	"github.com/cakturk/go-netstat/netstat"
-	"ruri.one/dynaports/types"
 )
 
 type Allocation struct {

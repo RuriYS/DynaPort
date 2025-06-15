@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/RuriYS/DynaPorts/utils"
 	"golang.org/x/exp/slog"
-	"ruri.one/dynaports/utils"
 )
 
 func main()  {
