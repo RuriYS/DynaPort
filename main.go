@@ -54,6 +54,13 @@ func main() {
 		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
 		if err != nil {
 			slog.Error(fmt.Sprintf("Failed to forward port: %s", err.Error()))
+			continue
+		}
+
+		_, err = conn.WriteToUDP([]byte("OK"), remoteAddr)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed to reply: %s", err))
+			continue
 		}
 	}
 }
