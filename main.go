@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/RuriYS/DynaPorts/types"
-	"github.com/RuriYS/DynaPorts/utils"
+	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/DynaPort/utils"
 	"golang.org/x/exp/slog"
 )
 

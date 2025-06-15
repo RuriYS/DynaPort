@@ -1,4 +1,4 @@
-module github.com/RuriYS/DynaPorts
+module github.com/RuriYS/DynaPort
 
 go 1.24.3
 

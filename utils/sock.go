@@ -3,7 +3,7 @@ package utils
 import (
 	"log/slog"
 
-	"github.com/RuriYS/DynaPorts/types"
+	"github.com/RuriYS/DynaPort/types"
 	"github.com/cakturk/go-netstat/netstat"
 )
 
