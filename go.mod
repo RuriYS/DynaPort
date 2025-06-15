@@ -2,7 +2,4 @@ module github.com/RuriYS/DynaPort
 
 go 1.23.0
 
-require (
-	github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5
-	golang.org/x/exp v0.0.0-20250606033433-dcc06ee1d476
-)
+require github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5
