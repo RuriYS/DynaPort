@@ -16,7 +16,13 @@ const (
 	broadcastPeriod = 3 * time.Minute
 )
 
-func StartClient(serverHost string, serverPort uint16) {
+func StartClient(serverHost string, serverPort uint16, verbose bool) {
+    slog.Info("dynaport is alive!")
+
+    if verbose {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
+
     serverAddr := net.UDPAddr{
         IP:   net.ParseIP(serverHost),
         Port: int(serverPort),
@@ -32,10 +38,12 @@ func StartClient(serverHost string, serverPort uint16) {
 
         conn, err := net.DialUDP("udp", nil, &serverAddr)
         if err != nil {
-            slog.Error(fmt.Sprintf("failed to dial server: %v", err))
+            slog.Error(fmt.Sprintf("failed to connect: %v", err))
             time.Sleep(broadcastPeriod)
             continue
         }
+
+        slog.Debug(fmt.Sprintf("connected to %v", &serverAddr))
 
         for _, alloc := range allocs {
             var protoByte byte

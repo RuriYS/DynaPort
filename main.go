@@ -19,6 +19,9 @@ func main() {
 
     clientMode := flag.Bool("client", false, "Run DynaPort as client mode")
     flag.BoolVar(clientMode, "c", false, "Alias for --client")
+    
+    verbose := flag.Bool("verbose", false, "Verbose logging")
+    flag.BoolVar(verbose, "v", false, "Alias for --verbose")
 
     flag.Parse()
 
@@ -27,8 +30,8 @@ func main() {
     }
 
 	if *serverMode {
-		internal.StartServer(*host, uint16(*port))
+		internal.StartServer(*host, uint16(*port), *verbose)
 	} else if *clientMode {
-		internal.StartClient(*host, uint16(*port))
+		internal.StartClient(*host, uint16(*port), *verbose)
 	}
 }

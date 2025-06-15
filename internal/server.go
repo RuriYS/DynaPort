@@ -21,16 +21,19 @@ const (
 	bufferSize = 3
 )
 
-func StartServer(host string, port uint16) {
-	slog.Info("dynaport is alive!")
-
+func StartServer(host string, port uint16, verbose bool) {
+	if verbose {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
+	}
+	
 	addr := net.UDPAddr{Port: int(port), IP: net.ParseIP(host)}
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
 		slog.Error(fmt.Sprintf("failed to start the server: %s", err.Error()))
 	}
-
-	slog.Info(fmt.Sprintf("server started at %v", &addr))
+	
+	slog.Info("dynaport is alive!")
+	slog.Info(fmt.Sprintf("listening at %v", &addr))
 
 	defer conn.Close()
 
@@ -49,7 +52,7 @@ func StartServer(host string, port uint16) {
 		
 		port := binary.BigEndian.Uint16(buffer[1:])
 
-		slog.Info(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
+		slog.Debug(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 
 		allocations, err := utils.GetAllocations()
 		if err != nil {
@@ -57,10 +60,10 @@ func StartServer(host string, port uint16) {
 		}
 		
 		for _, alloc := range allocations {
+			slog.Debug(fmt.Sprintf("checking port: %d\n", alloc.Port))
 			if alloc.Port == port {
 				conn.WriteToUDP([]byte{byte(Allocated)}, remoteAddr)
-				slog.Info(fmt.Sprintf("checking port: %d\n", alloc.Port))
-				slog.Warn(fmt.Sprintf("port %d is already allocated\n", port))
+				slog.Debug(fmt.Sprintf("port %d is already allocated\n", port))
 				continue
 			}
 		}
@@ -69,6 +72,8 @@ func StartServer(host string, port uint16) {
 		if err != nil {
 			slog.Error(fmt.Sprintf("failed to forward port: %s", err.Error()))
 			continue
+		} else {
+			slog.Info(fmt.Sprintf("port forwarded: %d/%s -> %s\n", port, protocol, remoteAddr.IP.To16()))
 		}
 
 		_, err = conn.WriteToUDP([]byte{byte(OK)}, remoteAddr)
