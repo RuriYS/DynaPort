@@ -3,51 +3,56 @@ package main
 import (
 	"fmt"
 	"net"
-	"strconv"
-	"strings"
 
+	"github.com/RuriYS/DynaPorts/types"
 	"github.com/RuriYS/DynaPorts/utils"
 	"golang.org/x/exp/slog"
 )
 
-func main()  {
-	slog.Info("dynaport is alive!")
+const (
+	listenPort = 10000
+	bufferSize = 6 // this is enough lol
+)
 
-	addr := net.UDPAddr{Port: 10000, IP: net.ParseIP("0.0.0.0")}
+func main() {
+	slog.Info("DynaPort is alive!")
 
-    conn, err := net.ListenUDP("udp", &addr)
-    if err != nil {
-        slog.Error("%s", err.Error())
-    }
+	addr := net.UDPAddr{Port: listenPort, IP: net.ParseIP("0.0.0.0")}
 
-    defer conn.Close()
+	conn, err := net.ListenUDP("udp", &addr)
+	if err != nil {
+		slog.Error("%s", err.Error())
+	}
+	slog.Info(fmt.Sprintf("Server started at %v", &addr))
 
-    buffer := make([]byte, 6)
-    for {
-        n, remoteAddr, err := conn.ReadFromUDP(buffer)
-        if n < 2 {
-            slog.Warn(fmt.Sprintf("Received malformed packet from %s", remoteAddr))
-            continue
-        }
-        if err != nil {
-            slog.Error("%s", err.Error())
-        }
+	defer conn.Close()
 
-        prot_str := string(buffer[:1])
-        protocol := utils.TCP
-        if prot_str == "u" {
-            protocol = utils.UDP
-        }
-        port, err := strconv.ParseUint(strings.Trim(string(buffer[1:n]), "\n"), 10, 64)
-        if err != nil {
-            slog.Error(err.Error())
-            continue
-        }
-        
-        slog.Info(fmt.Sprintf("Received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
-        err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
-        if err != nil {
-            slog.Error(err.Error())
-        }
-    }
+	buffer := make([]byte, bufferSize)
+	for {
+		n, remoteAddr, err := conn.ReadFromUDP(buffer)
+		if n < 2 {
+			slog.Warn(fmt.Sprintf("Received malformed packet from %s", remoteAddr))
+			continue
+		}
+		if err != nil {
+			slog.Error("%s", err.Error())
+		}
+
+		protocol := types.TCP
+		if string(buffer[:1]) == "u" {
+			protocol = types.UDP
+		}
+
+		port, err := utils.ParsePort(buffer[1:n])
+		if err != nil {
+			slog.Error(fmt.Sprintf("Parsing port failed: %s", err.Error()))
+			continue
+		}
+
+		slog.Info(fmt.Sprintf("Received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
+		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed to forward port: %s", err.Error()))
+		}
+	}
 }
