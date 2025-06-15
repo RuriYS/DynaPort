@@ -10,7 +10,11 @@ import (
 )
 
 func ForwardPort(addr string, port uint16, proto types.Protocol) error {
-	allocations := GetAllocations()
+	allocations, err := GetAllocations()
+	if err != nil {
+		return err
+	}
+	
 	for _, alloc := range allocations {
 		if alloc.Port == port {
 			return fmt.Errorf("port %d is already allocated", port)

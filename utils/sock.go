@@ -1,20 +1,18 @@
 package utils
 
 import (
-	"log/slog"
-
 	"github.com/RuriYS/DynaPort/types"
 	"github.com/cakturk/go-netstat/netstat"
 )
 
-func GetAllocations() []types.Allocation {
+func GetAllocations() (a []types.Allocation, err error) {
 	var allocations []types.Allocation
 
 	socks, err := netstat.TCPSocks(func(ste *netstat.SockTabEntry) bool {
 		return ste.State == netstat.Listen
 	})
 	if err != nil {
-		slog.Error(err.Error())
+		return nil, err
 	}
 
 	for _, sock := range socks {
@@ -26,7 +24,7 @@ func GetAllocations() []types.Allocation {
 
 	socks, err = netstat.UDPSocks(netstat.NoopFilter)
 	if err != nil {
-		slog.Error(err.Error())
+		return nil, err
 	}
 
 	for _, sock := range socks {
@@ -36,5 +34,5 @@ func GetAllocations() []types.Allocation {
 		})
 	}
 
-	return allocations
+	return allocations, nil
 }

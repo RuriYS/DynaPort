@@ -15,15 +15,15 @@ const (
 )
 
 func main() {
-	slog.Info("DynaPort is alive!")
+	slog.Info("dynaport is alive!")
 
 	addr := net.UDPAddr{Port: listenPort, IP: net.ParseIP("0.0.0.0")}
-
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		slog.Error("%s", err.Error())
+		slog.Error(fmt.Sprintf("failed to start the server: %s", err.Error()))
 	}
-	slog.Info(fmt.Sprintf("Server started at %v", &addr))
+
+	slog.Info(fmt.Sprintf("server started at %v", &addr))
 
 	defer conn.Close()
 
@@ -31,11 +31,11 @@ func main() {
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
 		if n < 2 {
-			slog.Warn(fmt.Sprintf("Received malformed packet from %s", remoteAddr))
+			slog.Warn(fmt.Sprintf("received malformed packet from %s", remoteAddr))
 			continue
 		}
 		if err != nil {
-			slog.Error(fmt.Sprintf("Failed to read packet: %s", err.Error()))
+			slog.Error(fmt.Sprintf("failed to read packet: %s", err.Error()))
 			continue
 		}
 
@@ -46,20 +46,20 @@ func main() {
 
 		port, err := utils.ParsePort(buffer[1:n])
 		if err != nil {
-			slog.Error(fmt.Sprintf("Parsing port failed: %s", err.Error()))
+			slog.Error(fmt.Sprintf("parsing port failed: %s", err.Error()))
 			continue
 		}
 
-		slog.Info(fmt.Sprintf("Received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
+		slog.Info(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
 		if err != nil {
-			slog.Error(fmt.Sprintf("Failed to forward port: %s", err.Error()))
+			slog.Error(fmt.Sprintf("failed to forward port: %s", err.Error()))
 			continue
 		}
 
 		_, err = conn.WriteToUDP([]byte("OK"), remoteAddr)
 		if err != nil {
-			slog.Error(fmt.Sprintf("Failed to reply: %s", err))
+			slog.Error(fmt.Sprintf("failed to reply: %s", err))
 			continue
 		}
 	}
