@@ -44,8 +44,7 @@ func StartClient(serverHost string, serverPort uint16) {
                 protoByte = 'u'
             }
 
-            portBytes := []byte{byte(alloc.Port >> 8), byte(alloc.Port & 0xff)}
-            packet := append([]byte{protoByte}, portBytes...)
+            packet := append([]byte{protoByte}, byte(alloc.Port))
 
             _, err := conn.Write(packet)
             if err != nil {
