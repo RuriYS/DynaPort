@@ -1,66 +1,34 @@
 package main
 
 import (
-	"fmt"
-	"net"
+	"flag"
+	"log"
 
-	"github.com/RuriYS/DynaPort/types"
-	"github.com/RuriYS/DynaPort/utils"
-	"golang.org/x/exp/slog"
-)
-
-const (
-	listenPort = 10000
-	bufferSize = 6 // this is enough lol
+	"github.com/RuriYS/DynaPort/internal"
 )
 
 func main() {
-	slog.Info("dynaport is alive!")
+    host := flag.String("host", "0.0.0.0", "Host for DynaPort to listen (default: 0.0.0.0)")
+    flag.StringVar(host, "h", "0.0.0.0", "Alias for --host")
 
-	addr := net.UDPAddr{Port: listenPort, IP: net.ParseIP("0.0.0.0")}
-	conn, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		slog.Error(fmt.Sprintf("failed to start the server: %s", err.Error()))
-	}
+    port := flag.Uint("port", 10000, "Port for DynaPort to listen (default: 10000)")
+    flag.UintVar(port, "p", 10000, "Alias for --port")
 
-	slog.Info(fmt.Sprintf("server started at %v", &addr))
+    serverMode := flag.Bool("server", false, "Run DynaPort as server mode")
+    flag.BoolVar(serverMode, "s", false, "Alias for --server")
 
-	defer conn.Close()
+    clientMode := flag.Bool("client", false, "Run DynaPort as client mode")
+    flag.BoolVar(clientMode, "c", false, "Alias for --client")
 
-	buffer := make([]byte, bufferSize)
-	for {
-		n, remoteAddr, err := conn.ReadFromUDP(buffer)
-		if n < 2 {
-			slog.Warn(fmt.Sprintf("received malformed packet from %s", remoteAddr))
-			continue
-		}
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to read packet: %s", err.Error()))
-			continue
-		}
+    flag.Parse()
 
-		protocol := types.TCP
-		if string(buffer[:1]) == "u" {
-			protocol = types.UDP
-		}
+    if *serverMode && *clientMode {
+        log.Fatalln("ERROR: --server and --client cannot both be set")
+    }
 
-		port, err := utils.ParsePort(buffer[1:n])
-		if err != nil {
-			slog.Error(fmt.Sprintf("parsing port failed: %s", err.Error()))
-			continue
-		}
-
-		slog.Info(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
-		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to forward port: %s", err.Error()))
-			continue
-		}
-
-		_, err = conn.WriteToUDP([]byte("OK\n"), remoteAddr)
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to reply: %s", err))
-			continue
-		}
+	if *serverMode {
+		internal.StartServer(*host, uint16(*port))
+	} else if *clientMode {
+		log.Fatalln("ERROR: unimplemented")
 	}
 }
