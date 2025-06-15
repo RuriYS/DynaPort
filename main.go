@@ -36,6 +36,7 @@ func main() {
 		}
 		if err != nil {
 			slog.Error("%s", err.Error())
+			continue
 		}
 
 		protocol := types.TCP
