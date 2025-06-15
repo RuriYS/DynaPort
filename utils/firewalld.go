@@ -10,17 +10,6 @@ import (
 )
 
 func ForwardPort(addr string, port uint16, proto types.Protocol) error {
-	allocations, err := GetAllocations()
-	if err != nil {
-		return err
-	}
-	
-	for _, alloc := range allocations {
-		if alloc.Port == port {
-			return fmt.Errorf("port %d is already allocated", port)
-		}
-	}
-
 	cmd := exec.Command("firewall-cmd", fmt.Sprintf("--add-forward-port=toaddr=%s:port=%d:proto=%s", addr, port, proto))
 	o, err := cmd.Output()
 	output := string(o)

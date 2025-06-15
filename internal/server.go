@@ -9,6 +9,13 @@ import (
 	"github.com/RuriYS/DynaPort/utils"
 )
 
+type RetCode uint8
+
+const (
+	OK RetCode = 0
+	Allocated RetCode = 1
+)
+
 const (
 	bufferSize = 6
 )
@@ -50,13 +57,29 @@ func StartServer(host string, port uint16) {
 		}
 
 		slog.Info(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
+
+		allocations, err := utils.GetAllocations()
+		if err != nil {
+			slog.Error(fmt.Sprintf("failed to get allocations: %s", err.Error()))
+		}
+		
+		for _, alloc := range allocations {
+			if alloc.Port == port {
+				_, err = conn.WriteToUDP([]byte{byte(Allocated)}, remoteAddr)
+				if err != nil {
+					slog.Error(fmt.Sprintf("failed to reply: %s", err.Error()))
+				}
+				continue
+			}
+		}
+
 		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
 		if err != nil {
 			slog.Error(fmt.Sprintf("failed to forward port: %s", err.Error()))
 			continue
 		}
 
-		_, err = conn.WriteToUDP([]byte("OK\n"), remoteAddr)
+		_, err = conn.WriteToUDP([]byte{byte(OK)}, remoteAddr)
 		if err != nil {
 			slog.Error(fmt.Sprintf("failed to reply: %s", err))
 			continue
