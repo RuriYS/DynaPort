@@ -57,7 +57,7 @@ func main() {
 			continue
 		}
 
-		_, err = conn.WriteToUDP([]byte("OK"), remoteAddr)
+		_, err = conn.WriteToUDP([]byte("OK\n"), remoteAddr)
 		if err != nil {
 			slog.Error(fmt.Sprintf("failed to reply: %s", err))
 			continue
