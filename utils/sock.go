@@ -18,7 +18,7 @@ func GetAllocations() (a []types.Allocation, err error) {
 	for _, sock := range socks {
 		allocations = append(allocations, types.Allocation{
 			Protocol: types.TCP,
-			Port:     sock.RemoteAddr.Port,
+			Port:     sock.LocalAddr.Port,
 		})
 	}
 
@@ -30,7 +30,7 @@ func GetAllocations() (a []types.Allocation, err error) {
 	for _, sock := range socks {
 		allocations = append(allocations, types.Allocation{
 			Protocol: types.UDP,
-			Port:     sock.RemoteAddr.Port,
+			Port:     sock.LocalAddr.Port,
 		})
 	}
 
