@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 type Protocol string
@@ -20,7 +21,7 @@ func ForwardPort(addr string, port uint16, proto Protocol) error {
     if err != nil {
         return err
     }
-    if output != "success" {
+    if !strings.Contains(output, "success") {
         return errors.New(output)
     }
     
