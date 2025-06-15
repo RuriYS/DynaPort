@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"net"
@@ -17,7 +18,7 @@ const (
 )
 
 const (
-	bufferSize = 6
+	bufferSize = 3
 )
 
 func StartServer(host string, port uint16) {
@@ -36,25 +37,17 @@ func StartServer(host string, port uint16) {
 	buffer := make([]byte, bufferSize)
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
-		if n < 2 {
-			slog.Warn(fmt.Sprintf("received malformed packet from %s", remoteAddr))
+		if err != nil || n != 3 {
+			slog.Warn(fmt.Sprintf("Invalid packet from %s\n", remoteAddr))
 			continue
 		}
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to read packet: %s", err.Error()))
-			continue
-		}
-
+		
 		protocol := types.TCP
 		if string(buffer[:1]) == "u" {
 			protocol = types.UDP
 		}
-
-		port, err := utils.ParsePort(buffer[1:n])
-		if err != nil {
-			slog.Error(fmt.Sprintf("parsing port failed: %s", err.Error()))
-			continue
-		}
+		
+		port := binary.BigEndian.Uint16(buffer[1:])
 
 		slog.Info(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 

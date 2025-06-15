@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"net"
@@ -44,8 +45,9 @@ func StartClient(serverHost string, serverPort uint16) {
                 protoByte = 'u'
             }
 
-            packet := append([]byte{protoByte}, byte(alloc.Port))
-
+            packet := make([]byte, 3)
+            packet[0] = protoByte
+            binary.BigEndian.PutUint16(packet[1:], alloc.Port)
             _, err := conn.Write(packet)
             if err != nil {
                 slog.Error(fmt.Sprintf("failed to send packet for %s %d: %v", alloc.Protocol, alloc.Port, err))
