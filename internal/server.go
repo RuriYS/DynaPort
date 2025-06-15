@@ -58,10 +58,9 @@ func StartServer(host string, port uint16) {
 		
 		for _, alloc := range allocations {
 			if alloc.Port == port {
-				_, err = conn.WriteToUDP([]byte{byte(Allocated)}, remoteAddr)
-				if err != nil {
-					slog.Error(fmt.Sprintf("failed to reply: %s", err.Error()))
-				}
+				conn.WriteToUDP([]byte{byte(Allocated)}, remoteAddr)
+				slog.Info(fmt.Sprintf("checking port: %d\n", alloc.Port))
+				slog.Warn(fmt.Sprintf("port %d is already allocated\n", port))
 				continue
 			}
 		}
