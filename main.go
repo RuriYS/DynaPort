@@ -35,7 +35,7 @@ func main() {
 			continue
 		}
 		if err != nil {
-			slog.Error("%s", err.Error())
+			slog.Error(fmt.Sprintf("Failed to read packet: %s", err.Error()))
 			continue
 		}
 
