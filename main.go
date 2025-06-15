@@ -26,7 +26,7 @@ func main()  {
     for {
         n, remoteAddr, err := conn.ReadFromUDP(buffer)
         if n < 2 {
-            slog.Warn("Received malformed packet from %s", remoteAddr)
+            slog.Warn(fmt.Sprintf("Received malformed packet from %s", remoteAddr))
             continue
         }
         if err != nil {
