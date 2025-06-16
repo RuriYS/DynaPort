@@ -71,9 +71,9 @@ func StartClient(serverHost string, serverPort uint16, verbose bool) {
             }
 
             res := resp[:n]
-            if len(res) == 1 && res[0] == byte(OK) {
+            if len(res) == 1 && res[0] == byte(types.OK) {
                 slog.Info(fmt.Sprintf("forwarded port %s %d", alloc.Protocol, alloc.Port))
-            } else if len(res) == 1 && res[0] == byte(Allocated) {
+            } else if len(res) == 1 && res[0] == byte(types.Allocated) {
                 slog.Warn(fmt.Sprintf("port already allocated %s %d", alloc.Protocol, alloc.Port))
             }
         }
