@@ -12,7 +12,7 @@ import (
 
 
 const (
-	bufferSize = 3
+	packetSize = 3
 )
 
 func StartServer(host string, port uint16, verbose bool) {
@@ -31,20 +31,20 @@ func StartServer(host string, port uint16, verbose bool) {
 
 	defer conn.Close()
 
-	buffer := make([]byte, bufferSize)
+	packet := make([]byte, packetSize)
 	for {
-		n, remoteAddr, err := conn.ReadFromUDP(buffer)
+		n, remoteAddr, err := conn.ReadFromUDP(packet)
 		if err != nil || n != 3 {
 			slog.Warn(fmt.Sprintf("Invalid packet from %s\n", remoteAddr))
 			continue
 		}
 		
 		protocol := types.TCP
-		if string(buffer[:1]) == "u" {
+		if string(packet[:1]) == "u" {
 			protocol = types.UDP
 		}
 		
-		port := binary.BigEndian.Uint16(buffer[1:])
+		port := binary.BigEndian.Uint16(packet[1:])
 
 		slog.Debug(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 

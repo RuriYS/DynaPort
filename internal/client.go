@@ -53,7 +53,7 @@ func StartClient(serverHost string, serverPort uint16, verbose bool) {
                 protoByte = 'u'
             }
 
-            packet := make([]byte, 3)
+            packet := make([]byte, packetSize)
             packet[0] = protoByte
             binary.BigEndian.PutUint16(packet[1:], alloc.Port)
             _, err := conn.Write(packet)
