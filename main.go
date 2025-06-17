@@ -30,14 +30,14 @@ func main() {
         slog.SetLogLoggerLevel(slog.LevelDebug)
     }
 
-    config, err := internal.GetConfig(*configPath)
+    err := internal.LoadConfig(*configPath)
     if err != nil {
         slog.Error("failed to load config", "main", err.Error())
     }
 
 	if *serverMode {
-		internal.StartServer(config)
+		internal.StartServer()
 	} else if *clientMode {
-		internal.StartClient(config)
+		internal.StartClient()
 	}
 }

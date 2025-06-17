@@ -31,12 +31,16 @@ client:
   whitelist_mode: false # forward ports in the list if true, otherwise don't (default: false)
 `
 
-func GetConfig(path string) (config types.Config, err error) {
+var (
+	config	*types.Config
+)
+
+func LoadConfig(path string) (err error) {
 	if len(path) == 0 {
 		path = "/etc/dynaport/config.yml"
 	}
 
-	slog.Debug("getting config", "GetConfig:path", path)
+	slog.Debug("getting config", "LoadConfig:path", path)
 	
 	_, err = os.Stat(path)
 	if err != nil {
@@ -46,19 +50,29 @@ func GetConfig(path string) (config types.Config, err error) {
 		}
 	}
 	
-	slog.Debug("reading config", "GetConfig:path", path)
+	slog.Debug("reading config", "LoadConfig:path", path)
 	f, err := os.ReadFile(path)
 	if err != nil {
-		return types.Config{}, nil
+		return nil
 	}
 
-	err = yaml.Unmarshal(f, &config)
+	c := &types.Config{}
+	err = yaml.Unmarshal(f, &c)
 	if err != nil {
-		return types.Config{}, nil
+		return nil
 	}
 
-	slog.Debug("found config", "GetConfig", config)
-	return config, nil
+	config = c
+	slog.Debug("found config", "LoadConfig", c)
+	return nil
+}
+
+func GetConfig() (c *types.Config) {
+	if config == nil {
+		panic("config not initialized")
+	}
+
+	return config
 }
 
 func createConfig(path string) {

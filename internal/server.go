@@ -12,7 +12,7 @@ import (
 
 const packetSize = 3
 
-func StartServer(config types.Config) {
+func StartServer() {
 	addr := &net.UDPAddr{Port: int(config.Server.Port), IP: net.ParseIP(config.Server.Host)}
 	conn := initializeServer(addr)
 	if conn == nil {

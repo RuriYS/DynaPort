@@ -10,7 +10,7 @@ import (
 	"github.com/RuriYS/DynaPort/types"
 )
 
-func StartClient(config types.Config) {
+func StartClient() {
 	slog.Info("dynaport is alive!")
 
 	serverAddr := net.UDPAddr{
