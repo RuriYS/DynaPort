@@ -6,6 +6,8 @@
 !go.mod
 !main.go
 
+!client/
 !internal/
+!server/
 !types/
 !utils/

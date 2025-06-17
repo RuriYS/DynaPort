@@ -5,7 +5,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/RuriYS/DynaPort/client"
 	"github.com/RuriYS/DynaPort/internal"
+	"github.com/RuriYS/DynaPort/server"
 )
 
 func main() {
@@ -47,8 +49,8 @@ func main() {
     slog.Info("[main] Starting " + mode)
 
 	if *serverMode {
-		internal.StartServer()
+		server.Run()
 	} else if *clientMode {
-		internal.StartClient()
+		client.Run()
 	}
 }

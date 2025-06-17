@@ -1,60 +1,37 @@
-package internal
+package server
 
 import (
 	"encoding/binary"
 	"fmt"
 	"log/slog"
 	"net"
-	"slices"
 
+	"github.com/RuriYS/DynaPort/internal"
 	"github.com/RuriYS/DynaPort/types"
 	"github.com/RuriYS/DynaPort/utils"
 )
 
-const packetSize = 3
+var allowedIPs map[string]struct{}
+var allowedPorts map[uint16]struct{}
 
-func StartServer() {
-	addr := &net.UDPAddr{Port: int(config.Server.Port), IP: net.ParseIP(config.Server.Host)}
-	conn := initializeServer(addr)
-	if conn == nil {
-		return
-	}
-
-	defer conn.Close()
-
-	slog.Info("[StartServer] starting listener", "addr", addr)
-	handleListener(conn)
-}
-
-func initializeServer(addr *net.UDPAddr) *net.UDPConn {
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		slog.Error("[initializeServer] failed to start the server", "error", err.Error())
-		return nil
-	}
-
-	slog.Info("[initializeServer] dynaport is alive!")
-	return conn
-}
-
-func handleListener(conn *net.UDPConn) {
-	packet := make([]byte, packetSize)
+func StartListener(conn *net.UDPConn) {
+	buffer := make([]byte, 3)
 	for {
-		n, remoteAddr, err := conn.ReadFromUDP(packet)
+		n, remoteAddr, err := conn.ReadFromUDP(buffer)
 		if err != nil || n != 3 {
-			slog.Warn("[handleListener] invalid packet", "remoteAddr", remoteAddr, "error", err.Error())
+			slog.Warn("[Listener] invalid packet", "remoteAddr", remoteAddr, "error", err.Error())
 			continue
 		}
 
-		protocol, port := parsePacket(packet)
-		slog.Debug("[handleListener] received message", "remoteAddr", remoteAddr, "protocol", protocol, "port", port)
+		protocol, port := parsePacket(buffer)
+		slog.Debug("[Listener] received message", "remoteAddr", remoteAddr, "protocol", protocol, "port", port)
 
-		if !checkPort(port) || !checkIP(remoteAddr.IP.To16().String()) {
-			slog.Debug("[handleListener] denied ip/port", "port", port, "remoteAddr", remoteAddr)
+		if !checkPort(port) || !checkIP(remoteAddr.IP.String()) {
+			slog.Debug("[Listener] denied ip/port", "port", port, "remoteAddr", remoteAddr)
 			continue
 		}
 
-		allocations := GetAllocations()
+		allocations := internal.GetAllocations()
 		if allocations == nil {
 			continue
 		}
@@ -67,24 +44,44 @@ func handleListener(conn *net.UDPConn) {
 	}
 }
 
+func Init() {
+    allowedIPs = make(map[string]struct{}, len(config.Server.AllowedIPs))
+    for _, ip := range config.Server.AllowedIPs {
+        allowedIPs[ip] = struct{}{}
+    }
+    allowedPorts = make(map[uint16]struct{}, len(config.Server.AllowedPorts))
+    for _, port := range config.Server.AllowedPorts {
+        allowedPorts[port] = struct{}{}
+    }
+}
+
 func parsePacket(packet []byte) (types.Protocol, uint16) {
 	protocol := types.TCP
-	if string(packet[:1]) == "u" {
+	if packet[0] == 'u' {
 		protocol = types.UDP
 	}
-
 	port := binary.BigEndian.Uint16(packet[1:])
 	return protocol, port
 }
 
 func checkIP(ip string) bool {
-	slog.Debug("[checkIP] checking ip", "ip", ip)
-	return len(config.Server.AllowedIPs) == 0 || slices.Contains(config.Server.AllowedIPs, ip)
+    slog.Debug("[checkIP] checking ip", "ip", ip)
+    return len(allowedIPs) == 0 || hasIP(ip)
+}
+
+func hasIP(ip string) bool {
+    _, ok := allowedIPs[ip]
+    return ok
 }
 
 func checkPort(port uint16) bool {
-	slog.Debug("[checkPort] checking port", "port", port)
-	return len(config.Server.AllowedPorts) == 0 || slices.Contains(config.Server.AllowedPorts, port)
+    slog.Debug("[checkPort] checking port", "port", port)
+    return len(allowedPorts) == 0 || hasPort(port)
+}
+
+func hasPort(port uint16) bool {
+    _, ok := allowedPorts[port]
+    return ok
 }
 
 func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port uint16, remoteAddr *net.UDPAddr) bool {
@@ -100,7 +97,7 @@ func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port
 }
 
 func forwardPort(conn *net.UDPConn, remoteAddr *net.UDPAddr, port uint16, protocol types.Protocol) {
-	err := utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
+	err := utils.ForwardPort(remoteAddr.IP.String(), uint16(port), protocol)
 	if err != nil {
 		slog.Error("[forwardPort] failed to forward port", "remoteAddr", remoteAddr, "port", port, "protocol", protocol, "error", err.Error())
 		return
