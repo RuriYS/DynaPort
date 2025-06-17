@@ -40,8 +40,12 @@ func main() {
     mode := "server"
     if *clientMode {
         mode = "client"
+    } else {
+        *serverMode = true
     }
+    
     slog.Info("[main] Starting " + mode)
+
 	if *serverMode {
 		internal.StartServer()
 	} else if *clientMode {
