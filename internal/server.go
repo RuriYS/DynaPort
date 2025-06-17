@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"slices"
 
 	"github.com/RuriYS/DynaPort/types"
 	"github.com/RuriYS/DynaPort/utils"
@@ -48,6 +49,11 @@ func handleListener(conn *net.UDPConn) {
 		protocol, port := parsePacket(packet)
 		slog.Debug(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 
+		if !checkPort(port) || !checkIP(remoteAddr.IP.To16().String()) {
+			slog.Debug("denied ip/port", "port", port, "remoteAddr", remoteAddr)
+			continue
+		}
+
 		allocations := GetchAllocations()
 		if allocations == nil {
 			continue
@@ -69,6 +75,16 @@ func parsePacket(packet []byte) (types.Protocol, uint16) {
 
 	port := binary.BigEndian.Uint16(packet[1:])
 	return protocol, port
+}
+
+func checkIP(ip string) bool {
+	slog.Debug("checking ip", "ip", ip)
+	return len(config.Server.AllowedIPs) == 0 || slices.Contains(config.Server.AllowedIPs, ip)
+}
+
+func checkPort(port uint16) bool {
+	slog.Debug("checking port", "port", port)
+	return len(config.Server.AllowedPorts) == 0 || slices.Contains(config.Server.AllowedPorts, port)
 }
 
 func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port uint16, remoteAddr *net.UDPAddr) bool {

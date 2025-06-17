@@ -24,6 +24,7 @@ A simple, fast, efficient dynamic port forwarder for Linux proxies written in Go
   - [ ] Broadcast closed sockets
   - [ ] Web Interface
   - [ ] CLI Interface
+- [x] Dynamic Configuration
 
 ## Usage
 ```bash
