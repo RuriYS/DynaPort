@@ -32,7 +32,7 @@ func handleBroadcast() {
 	}
 
 	for {
-		allocations := GetchAllocations()
+		allocations := GetAllocations()
 		conn := establishConnection(&serverAddr, broadcastPeriod)
 		if conn == nil {
 			continue

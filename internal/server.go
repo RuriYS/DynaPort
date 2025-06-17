@@ -54,7 +54,7 @@ func handleListener(conn *net.UDPConn) {
 			continue
 		}
 
-		allocations := GetchAllocations()
+		allocations := GetAllocations()
 		if allocations == nil {
 			continue
 		}
