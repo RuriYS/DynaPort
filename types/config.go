@@ -10,6 +10,7 @@ type Config struct {
 	}
 	Client struct {
 		Host				string 		`yaml:"host"`
+		Port 				uint16 		`yaml:"port"`
 		BroadcastInterval	string		`yaml:"broadcast_interval"`
 		Timeout				string 		`yaml:"timeout"`
 		Ports 				[]uint16	`yaml:"ports"`

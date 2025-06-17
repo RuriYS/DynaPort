@@ -10,16 +10,10 @@ import (
 	"github.com/RuriYS/DynaPort/utils"
 )
 
-const (
-	packetSize = 3
-)
+const packetSize = 3
 
-func StartServer(host string, port uint16, verbose bool) {
-	if verbose {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	}
-
-	addr := &net.UDPAddr{Port: int(port), IP: net.ParseIP(host)}
+func StartServer(config types.Config) {
+	addr := &net.UDPAddr{Port: int(config.Server.Port), IP: net.ParseIP(config.Server.Host)}
 	conn := initializeServer(addr)
 	if conn == nil {
 		return

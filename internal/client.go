@@ -15,16 +15,12 @@ const (
 	broadcastPeriod = 3 * time.Minute
 )
 
-func StartClient(serverHost string, serverPort uint16, verbose bool) {
+func StartClient(config types.Config) {
 	slog.Info("dynaport is alive!")
 
-	if verbose {
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	}
-
 	serverAddr := net.UDPAddr{
-		IP:   net.ParseIP(serverHost),
-		Port: int(serverPort),
+		IP:   net.ParseIP(config.Client.Host),
+		Port: int(config.Client.Port),
 	}
 
 	for {
