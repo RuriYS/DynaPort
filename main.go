@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"log"
 	"log/slog"
+	"os"
 
 	"github.com/RuriYS/DynaPort/internal"
 )
@@ -23,7 +23,8 @@ func main() {
     flag.Parse()
 
     if *serverMode && *clientMode {
-        log.Fatalln("ERROR: --server and --client cannot both be set")
+        slog.Error("[main] server and client cannot both be set")
+        os.Exit(1)
     }
 
     if *verbose {
@@ -32,9 +33,15 @@ func main() {
 
     err := internal.LoadConfig(*configPath)
     if err != nil {
-        slog.Error("failed to load config", "main", err.Error())
+        slog.Error("[main] failed to load config", "error", err.Error())
+        os.Exit(1)
     }
 
+    mode := "server"
+    if *clientMode {
+        mode = "client"
+    }
+    slog.Info("[main] Starting " + mode)
 	if *serverMode {
 		internal.StartServer()
 	} else if *clientMode {
