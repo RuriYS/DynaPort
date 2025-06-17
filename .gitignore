@@ -1,2 +1,11 @@
-DynaPort
-go.sum
+/*
+
+!.devcontainer/
+!.gitignore
+!*.md
+!go.mod
+!main.go
+
+!internal/
+!types/
+!utils/
