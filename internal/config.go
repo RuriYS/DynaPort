@@ -40,17 +40,17 @@ func LoadConfig(path string) (err error) {
 		path = "/etc/dynaport/config.yml"
 	}
 
-	slog.Debug("getting config", "LoadConfig:path", path)
+	slog.Debug("[LoadConfig] getting config", "path", path)
 	
 	_, err = os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			slog.Debug("config does not exist")
+			slog.Warn("[LoadConfig] config does not exist", "path", path, "error", err)
 			createConfig(path)
 		}
 	}
 	
-	slog.Debug("reading config", "LoadConfig:path", path)
+	slog.Debug("[LoadConfig] reading config", "path", path)
 	f, err := os.ReadFile(path)
 	if err != nil {
 		return nil
@@ -63,30 +63,31 @@ func LoadConfig(path string) (err error) {
 	}
 
 	config = c
-	slog.Debug("found config", "LoadConfig", c)
+	slog.Debug("[LoadConfig] found config", "config", c)
 	return nil
 }
 
 func GetConfig() (c *types.Config) {
 	if config == nil {
-		panic("config not initialized")
+		slog.Error("[GetConfig] config not initialized", "config", c)
+		os.Exit(1)
 	}
 
 	return config
 }
 
 func createConfig(path string) {
-	slog.Debug("creating directory", "createConfig:path", path)
+	slog.Debug("[createConfig] creating directory", "path", path)
 	dir := filepath.Dir(path)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		slog.Error("failed to create directory", "GetConfig", err.Error())
+		slog.Error("[createConfig] failed to create directory", "error", err.Error())
 		os.Exit(1)
 	}
-	slog.Debug("writing default config", "createConfig:path", path)
+	slog.Debug("[createConfig] writing default config", "path", path, "data", default_config)
 	err = os.WriteFile(path, []byte(default_config), 0755)
 	if err != nil {
-		slog.Error("failed to create config", "GetConfig", err.Error())
+		slog.Error("[createConfig] failed to create config", "error", err.Error())
 		os.Exit(1)
 	}
 }
