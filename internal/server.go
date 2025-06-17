@@ -22,18 +22,18 @@ func StartServer() {
 
 	defer conn.Close()
 
-	slog.Info(fmt.Sprintf("starting listener at %v", addr))
+	slog.Info("[StartServer] starting listener", "addr", addr)
 	handleListener(conn)
 }
 
 func initializeServer(addr *net.UDPAddr) *net.UDPConn {
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
-		slog.Error("failed to start the server", "initializeServer", err.Error())
+		slog.Error("[initializeServer] failed to start the server", "error", err.Error())
 		return nil
 	}
 
-	slog.Info("dynaport is alive!")
+	slog.Info("[initializeServer] dynaport is alive!")
 	return conn
 }
 
@@ -42,15 +42,15 @@ func handleListener(conn *net.UDPConn) {
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(packet)
 		if err != nil || n != 3 {
-			slog.Warn(fmt.Sprintf("invalid packet from %s", remoteAddr), "handleListener", err.Error())
+			slog.Warn("[handleListener] invalid packet", "remoteAddr", remoteAddr, "error", err.Error())
 			continue
 		}
 
 		protocol, port := parsePacket(packet)
-		slog.Debug(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
+		slog.Debug("[handleListener] received message", "remoteAddr", remoteAddr, "protocol", protocol, "port", port)
 
 		if !checkPort(port) || !checkIP(remoteAddr.IP.To16().String()) {
-			slog.Debug("denied ip/port", "port", port, "remoteAddr", remoteAddr)
+			slog.Debug("[handleListener] denied ip/port", "port", port, "remoteAddr", remoteAddr)
 			continue
 		}
 
@@ -78,21 +78,21 @@ func parsePacket(packet []byte) (types.Protocol, uint16) {
 }
 
 func checkIP(ip string) bool {
-	slog.Debug("checking ip", "ip", ip)
+	slog.Debug("[checkIP] checking ip", "ip", ip)
 	return len(config.Server.AllowedIPs) == 0 || slices.Contains(config.Server.AllowedIPs, ip)
 }
 
 func checkPort(port uint16) bool {
-	slog.Debug("checking port", "port", port)
+	slog.Debug("[checkPort] checking port", "port", port)
 	return len(config.Server.AllowedPorts) == 0 || slices.Contains(config.Server.AllowedPorts, port)
 }
 
 func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port uint16, remoteAddr *net.UDPAddr) bool {
 	for _, alloc := range allocations {
-		slog.Debug(fmt.Sprintf("checking port: %d\n", alloc.Port))
+		slog.Debug("[checkPortAllocation] checking port", "port", alloc.Port)
 		if alloc.Port == port {
 			conn.WriteToUDP([]byte{byte(types.Allocated)}, remoteAddr)
-			slog.Debug(fmt.Sprintf("port %d is already allocated\n", port))
+			slog.Debug("[checkPortAllocation] port already allocated", "remoteAddr", remoteAddr, "port", port, "allocations", allocations)
 			return true
 		}
 	}
@@ -102,14 +102,14 @@ func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port
 func forwardPort(conn *net.UDPConn, remoteAddr *net.UDPAddr, port uint16, protocol types.Protocol) {
 	err := utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
 	if err != nil {
-		slog.Error("failed to forward port", "forwardPort", err.Error())
+		slog.Error("[forwardPort] failed to forward port", "remoteAddr", remoteAddr, "port", port, "protocol", protocol, "error", err.Error())
 		return
 	}
 
-	slog.Info(fmt.Sprintf("port forwarded: %d/%s -> %s\n", port, protocol, remoteAddr.IP.To16()))
+	slog.Info(fmt.Sprintf("[forwardPort] port forwarded: %d/%s -> %s\n", port, protocol, remoteAddr.IP))
 
 	_, err = conn.WriteToUDP([]byte{byte(types.OK)}, remoteAddr)
 	if err != nil {
-		slog.Error("failed to reply", "forwardPort", err.Error())
+		slog.Error("[forwardPort] failed to reply", "error", err.Error())
 	}
 }
