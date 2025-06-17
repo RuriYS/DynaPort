@@ -10,11 +10,6 @@ import (
 	"github.com/RuriYS/DynaPort/types"
 )
 
-const (
-	timeoutSec      = 5
-	broadcastPeriod = 3 * time.Minute
-)
-
 func StartClient(config types.Config) {
 	slog.Info("dynaport is alive!")
 
@@ -23,14 +18,24 @@ func StartClient(config types.Config) {
 		Port: int(config.Client.Port),
 	}
 
+	broadcastPeriod, err := time.ParseDuration(config.Client.BroadcastInterval)
+	if err != nil {
+		slog.Error("failed to parse broadcast_interval", "StartClient", err.Error())
+	}
+
+	timeout, err := time.ParseDuration(config.Client.Timeout)
+	if err != nil {
+		slog.Error("failed to parse timeout", "StartClient", err.Error())
+	}
+
 	for {
 		allocations := GetchAllocations()
-		conn := establishConnection(&serverAddr)
+		conn := establishConnection(&serverAddr, broadcastPeriod)
 		if conn == nil {
 			continue
 		}
 
-		processAllocations(conn, allocations)
+		processAllocations(conn, allocations, timeout)
 
 		conn.Close()
 		slog.Info(fmt.Sprintf("broadcast complete, sleeping for %v", broadcastPeriod))
@@ -38,7 +43,7 @@ func StartClient(config types.Config) {
 	}
 }
 
-func establishConnection(serverAddr *net.UDPAddr) *net.UDPConn {
+func establishConnection(serverAddr *net.UDPAddr, broadcastPeriod time.Duration) *net.UDPConn {
 	conn, err := net.DialUDP("udp", nil, serverAddr)
 	if err != nil {
 		slog.Error("failed to connect", "establishConnection", err.Error())
@@ -49,7 +54,7 @@ func establishConnection(serverAddr *net.UDPAddr) *net.UDPConn {
 	return conn
 }
 
-func processAllocations(conn *net.UDPConn, allocations []types.Allocation) {
+func processAllocations(conn *net.UDPConn, allocations []types.Allocation, timeout time.Duration) {
 	for _, alloc := range allocations {
 		var protoByte byte
 		if alloc.Protocol == types.TCP {
@@ -67,7 +72,7 @@ func processAllocations(conn *net.UDPConn, allocations []types.Allocation) {
 			continue
 		}
 
-		conn.SetReadDeadline(time.Now().Add(timeoutSec * time.Second))
+		conn.SetReadDeadline(time.Now().Add(timeout))
 		resp := make([]byte, 1)
 		n, _, err := conn.ReadFromUDP(resp)
 		if err != nil {
