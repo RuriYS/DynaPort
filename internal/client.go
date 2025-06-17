@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/RuriYS/DynaPort/types"
-	"github.com/RuriYS/DynaPort/utils"
 )
 
 const (
@@ -17,69 +16,74 @@ const (
 )
 
 func StartClient(serverHost string, serverPort uint16, verbose bool) {
-    slog.Info("dynaport is alive!")
+	slog.Info("dynaport is alive!")
 
-    if verbose {
+	if verbose {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
 
-    serverAddr := net.UDPAddr{
-        IP:   net.ParseIP(serverHost),
-        Port: int(serverPort),
-    }
+	serverAddr := net.UDPAddr{
+		IP:   net.ParseIP(serverHost),
+		Port: int(serverPort),
+	}
 
-    for {
-        allocs, err := utils.GetAllocations()
-        if err != nil {
-            slog.Error(fmt.Sprintf("failed to get allocations: %v", err))
-            time.Sleep(broadcastPeriod)
-            continue
-        }
+	for {
+		allocations := GetchAllocations()
+		conn := establishConnection(&serverAddr)
+		if conn == nil {
+			continue
+		}
 
-        conn, err := net.DialUDP("udp", nil, &serverAddr)
-        if err != nil {
-            slog.Error(fmt.Sprintf("failed to connect: %v", err))
-            time.Sleep(broadcastPeriod)
-            continue
-        }
+		processAllocations(conn, allocations)
 
-        slog.Debug(fmt.Sprintf("connected to %v", &serverAddr))
+		conn.Close()
+		slog.Info(fmt.Sprintf("broadcast complete, sleeping for %v", broadcastPeriod))
+		time.Sleep(broadcastPeriod)
+	}
+}
 
-        for _, alloc := range allocs {
-            var protoByte byte
-            if alloc.Protocol == types.TCP {
-                protoByte = 't'
-            } else {
-                protoByte = 'u'
-            }
+func establishConnection(serverAddr *net.UDPAddr) *net.UDPConn {
+	conn, err := net.DialUDP("udp", nil, serverAddr)
+	if err != nil {
+		slog.Error("failed to connect", "establishConnection", err.Error())
+		time.Sleep(broadcastPeriod)
+		return nil
+	}
+	slog.Debug(fmt.Sprintf("connected to %v", serverAddr))
+	return conn
+}
 
-            packet := make([]byte, packetSize)
-            packet[0] = protoByte
-            binary.BigEndian.PutUint16(packet[1:], alloc.Port)
-            _, err := conn.Write(packet)
-            if err != nil {
-                slog.Error(fmt.Sprintf("failed to send packet for %s %d: %v", alloc.Protocol, alloc.Port, err))
-                continue
-            }
+func processAllocations(conn *net.UDPConn, allocations []types.Allocation) {
+	for _, alloc := range allocations {
+		var protoByte byte
+		if alloc.Protocol == types.TCP {
+			protoByte = 't'
+		} else {
+			protoByte = 'u'
+		}
 
-            conn.SetReadDeadline(time.Now().Add(timeoutSec * time.Second))
-            resp := make([]byte, 1)
-            n, _, err := conn.ReadFromUDP(resp)
-            if err != nil {
-                slog.Warn(fmt.Sprintf("no response for %s %d: %v", alloc.Protocol, alloc.Port, err))
-                continue
-            }
+		packet := make([]byte, packetSize)
+		packet[0] = protoByte
+		binary.BigEndian.PutUint16(packet[1:], alloc.Port)
+		_, err := conn.Write(packet)
+		if err != nil {
+			slog.Error(fmt.Sprintf("failed to send packet for %s %d", alloc.Protocol, alloc.Port), "processAllocations", err.Error())
+			continue
+		}
 
-            res := resp[:n]
-            if len(res) == 1 && res[0] == byte(types.OK) {
-                slog.Info(fmt.Sprintf("forwarded port %s %d", alloc.Protocol, alloc.Port))
-            } else if len(res) == 1 && res[0] == byte(types.Allocated) {
-                slog.Warn(fmt.Sprintf("port already allocated %s %d", alloc.Protocol, alloc.Port))
-            }
-        }
+		conn.SetReadDeadline(time.Now().Add(timeoutSec * time.Second))
+		resp := make([]byte, 1)
+		n, _, err := conn.ReadFromUDP(resp)
+		if err != nil {
+			slog.Warn(fmt.Sprintf("no response for %s %d", alloc.Protocol, alloc.Port), "processAllocations", err.Error())
+			continue
+		}
 
-        conn.Close()
-        slog.Info(fmt.Sprintf("broadcast complete, sleeping for %v", broadcastPeriod))
-        time.Sleep(broadcastPeriod)
-    }
+		res := resp[:n]
+		if len(res) == 1 && res[0] == byte(types.OK) {
+			slog.Info(fmt.Sprintf("forwarded port %s %d", alloc.Protocol, alloc.Port))
+		} else if len(res) == 1 && res[0] == byte(types.Allocated) {
+			slog.Warn(fmt.Sprintf("port already allocated %s %d", alloc.Protocol, alloc.Port))
+		}
+	}
 }

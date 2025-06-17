@@ -10,7 +10,6 @@ import (
 	"github.com/RuriYS/DynaPort/utils"
 )
 
-
 const (
 	packetSize = 3
 )
@@ -19,61 +18,88 @@ func StartServer(host string, port uint16, verbose bool) {
 	if verbose {
 		slog.SetLogLoggerLevel(slog.LevelDebug)
 	}
-	
-	addr := net.UDPAddr{Port: int(port), IP: net.ParseIP(host)}
-	conn, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		slog.Error(fmt.Sprintf("failed to start the server: %s", err.Error()))
+
+	addr := &net.UDPAddr{Port: int(port), IP: net.ParseIP(host)}
+	conn := initializeServer(addr)
+	if conn == nil {
+		return
 	}
-	
-	slog.Info("dynaport is alive!")
-	slog.Info(fmt.Sprintf("listening at %v", &addr))
 
 	defer conn.Close()
 
+	slog.Info(fmt.Sprintf("starting listener at %v", addr))
+	handleListener(conn)
+}
+
+func initializeServer(addr *net.UDPAddr) *net.UDPConn {
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		slog.Error("failed to start the server", "initializeServer", err.Error())
+		return nil
+	}
+
+	slog.Info("dynaport is alive!")
+	return conn
+}
+
+func handleListener(conn *net.UDPConn) {
 	packet := make([]byte, packetSize)
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(packet)
 		if err != nil || n != 3 {
-			slog.Warn(fmt.Sprintf("Invalid packet from %s\n", remoteAddr))
+			slog.Warn(fmt.Sprintf("invalid packet from %s", remoteAddr), "handleListener", err.Error())
 			continue
 		}
-		
-		protocol := types.TCP
-		if string(packet[:1]) == "u" {
-			protocol = types.UDP
-		}
-		
-		port := binary.BigEndian.Uint16(packet[1:])
 
+		protocol, port := parsePacket(packet)
 		slog.Debug(fmt.Sprintf("received %s %d from %s", protocol, port, remoteAddr.IP.To16()))
 
-		allocations, err := utils.GetAllocations()
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to get allocations: %s", err.Error()))
-		}
-		
-		for _, alloc := range allocations {
-			slog.Debug(fmt.Sprintf("checking port: %d\n", alloc.Port))
-			if alloc.Port == port {
-				conn.WriteToUDP([]byte{byte(types.Allocated)}, remoteAddr)
-				slog.Debug(fmt.Sprintf("port %d is already allocated\n", port))
-				continue
-			}
-		}
-
-		err = utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to forward port: %s", err.Error()))
-			continue
-		} else {
-			slog.Info(fmt.Sprintf("port forwarded: %d/%s -> %s\n", port, protocol, remoteAddr.IP.To16()))
-		}
-
-		_, err = conn.WriteToUDP([]byte{byte(types.OK)}, remoteAddr)
-		if err != nil {
-			slog.Error(fmt.Sprintf("failed to reply: %s", err))
+		allocations := GetchAllocations()
+		if allocations == nil {
 			continue
 		}
+
+		if checkPortAllocation(conn, allocations, port, remoteAddr) {
+			continue
+		}
+
+		forwardPort(conn, remoteAddr, port, protocol)
+	}
+}
+
+func parsePacket(packet []byte) (types.Protocol, uint16) {
+	protocol := types.TCP
+	if string(packet[:1]) == "u" {
+		protocol = types.UDP
+	}
+
+	port := binary.BigEndian.Uint16(packet[1:])
+	return protocol, port
+}
+
+func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port uint16, remoteAddr *net.UDPAddr) bool {
+	for _, alloc := range allocations {
+		slog.Debug(fmt.Sprintf("checking port: %d\n", alloc.Port))
+		if alloc.Port == port {
+			conn.WriteToUDP([]byte{byte(types.Allocated)}, remoteAddr)
+			slog.Debug(fmt.Sprintf("port %d is already allocated\n", port))
+			return true
+		}
+	}
+	return false
+}
+
+func forwardPort(conn *net.UDPConn, remoteAddr *net.UDPAddr, port uint16, protocol types.Protocol) {
+	err := utils.ForwardPort(remoteAddr.IP.To16().String(), uint16(port), protocol)
+	if err != nil {
+		slog.Error("failed to forward port", "forwardPort", err.Error())
+		return
+	}
+
+	slog.Info(fmt.Sprintf("port forwarded: %d/%s -> %s\n", port, protocol, remoteAddr.IP.To16()))
+
+	_, err = conn.WriteToUDP([]byte{byte(types.OK)}, remoteAddr)
+	if err != nil {
+		slog.Error("failed to reply", "forwardPort", err.Error())
 	}
 }
