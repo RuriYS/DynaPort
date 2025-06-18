@@ -1,11 +1,11 @@
-package utils
+package sockit
 
 import (
 	"github.com/RuriYS/RePorter/types"
 	"github.com/cakturk/go-netstat/netstat"
 )
 
-func GetAllocations() (a []types.Allocation, err error) {
+func GetSocks() (a []types.Allocation, err error) {
 	var allocations []types.Allocation
 
 	socks, err := netstat.TCPSocks(func(ste *netstat.SockTabEntry) bool {

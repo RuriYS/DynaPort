@@ -8,13 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/internal/config"
+	"github.com/RuriYS/RePorter/internal/sockit"
 	"github.com/RuriYS/RePorter/types"
 )
 
 func StartRelay() {
-	config := internal.GetConfig()
-
+	config := config.GetConfig()
 	serverAddr := net.UDPAddr{
 		IP:   net.ParseIP(config.Client.Host),
 		Port: int(config.Client.Port),
@@ -31,7 +31,7 @@ func StartRelay() {
 	}
 
 	for {
-		sockets := internal.GetAllocations()
+		sockets := sockit.GetAll()
 		conn := connect(&serverAddr, interval)
 		if conn == nil {
 			slog.Error("[Relay] failed to connect", "error", err.Error())

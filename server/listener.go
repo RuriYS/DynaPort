@@ -6,15 +6,13 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/internal/firewalld"
+	"github.com/RuriYS/RePorter/internal/sockit"
 	"github.com/RuriYS/RePorter/types"
-	"github.com/RuriYS/RePorter/utils"
 )
 
-var allowedIPs map[string]struct{}
-var allowedPorts map[uint16]struct{}
-
 func StartListener(conn *net.UDPConn) {
+	slog.Info("[Listener] listening", "addr", conn.LocalAddr().String())
 	buffer := make([]byte, 3)
 	for {
 		n, remoteAddr, err := conn.ReadFromUDP(buffer)
@@ -31,7 +29,7 @@ func StartListener(conn *net.UDPConn) {
 			continue
 		}
 
-		allocations := internal.GetAllocations()
+		allocations := sockit.GetAll()
 		if allocations == nil {
 			continue
 		}
@@ -42,17 +40,6 @@ func StartListener(conn *net.UDPConn) {
 
 		forwardPort(conn, remoteAddr, port, protocol)
 	}
-}
-
-func Init() {
-    allowedIPs = make(map[string]struct{}, len(config.Server.AllowedIPs))
-    for _, ip := range config.Server.AllowedIPs {
-        allowedIPs[ip] = struct{}{}
-    }
-    allowedPorts = make(map[uint16]struct{}, len(config.Server.AllowedPorts))
-    for _, port := range config.Server.AllowedPorts {
-        allowedPorts[port] = struct{}{}
-    }
 }
 
 func parsePacket(packet []byte) (types.Protocol, uint16) {
@@ -97,7 +84,7 @@ func checkPortAllocation(conn *net.UDPConn, allocations []types.Allocation, port
 }
 
 func forwardPort(conn *net.UDPConn, remoteAddr *net.UDPAddr, port uint16, protocol types.Protocol) {
-	err := utils.ForwardPort(remoteAddr.IP.String(), uint16(port), protocol)
+	err := firewalld.ForwardPort(remoteAddr.IP.String(), uint16(port), protocol)
 	if err != nil {
 		slog.Error("[forwardPort] failed to forward port", "remoteAddr", remoteAddr, "port", port, "protocol", protocol, "error", err.Error())
 		return

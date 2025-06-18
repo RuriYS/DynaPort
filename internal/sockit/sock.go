@@ -1,12 +1,12 @@
-package internal
+package sockit
 
 import (
 	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/RuriYS/RePorter/internal/config"
 	"github.com/RuriYS/RePorter/types"
-	"github.com/RuriYS/RePorter/utils"
 )
 
 var (
@@ -17,30 +17,35 @@ var (
 )
 
 func initialize() {
-	config := GetConfig()
+	config := config.GetConfig()
 	var err error
 	interval, err = time.ParseDuration(config.Client.BroadcastInterval)
 	if err != nil {
-		slog.Error("[Allocator] initialization failed", "error", err)
+		slog.Error("[Sockit] initialization failed", "error", err)
 		return
 	}
 }
 
-func RunAllocator() chan struct{} {
+func Run() chan struct{} {
 	ready = make(chan struct{})
 	go func ()  {
-		slog.Info("[Allocator] initializing")
+		slog.Info("[Sockit] initializing")
 		initialize()
 		cache = getSockets()
-		slog.Debug("[Allocator] sockets cached", "cache", cache)
+		slog.Debug("[Sockit] sockets cached", "cache", cache)
 		close(ready)
-		ticker := time.NewTicker(interval)
+		tickDuration := interval - time.Second
+		if tickDuration < time.Second {
+			tickDuration = time.Second
+			slog.Warn("[Sockit] interval too short, using minimum 1s ticker")
+		}
+		ticker := time.NewTicker(tickDuration)
 		defer ticker.Stop()
 		for {
 			<- ticker.C
-			slog.Debug("[Allocator] scanning for sockets")
+			slog.Debug("[Sockit] scanning for sockets")
 			allocs := getSockets()
-			slog.Debug("[Allocator] sockets found", "allocs", allocs)
+			slog.Debug("[Sockit] sockets found", "allocs", allocs)
 			mutex.Lock()
 			cache = allocs
 			mutex.Unlock()
@@ -49,14 +54,14 @@ func RunAllocator() chan struct{} {
 	return ready
 }
 
-func GetAllocations() []types.Allocation {
+func GetAll() []types.Allocation {
 	mutex.RLock()
 	defer mutex.RUnlock()
 	return cache
 }
 
 func getSockets() []types.Allocation {
-	allocs, err := utils.GetAllocations()
+	allocs, err := GetSocks()
 	if err != nil {
 		slog.Error("failed to get allocations", "error", err.Error())
 		return nil

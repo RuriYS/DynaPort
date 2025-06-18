@@ -6,7 +6,8 @@ import (
 	"os"
 
 	"github.com/RuriYS/RePorter/client"
-	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/internal/config"
+	"github.com/RuriYS/RePorter/internal/sockit"
 	"github.com/RuriYS/RePorter/server"
 )
 
@@ -33,7 +34,7 @@ func main() {
         slog.SetLogLoggerLevel(slog.LevelDebug)
     }
 
-    err := internal.LoadConfig(*configPath)
+    err := config.LoadConfig(*configPath)
     if err != nil {
         slog.Error("[main] failed to load config", "error", err.Error())
         os.Exit(1)
@@ -48,7 +49,7 @@ func main() {
     
     slog.Info("[main] Starting " + mode)
 
-    <- internal.RunAllocator()
+    <- sockit.Run()
     
 	if *serverMode {
 		server.Run()

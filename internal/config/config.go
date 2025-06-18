@@ -1,4 +1,4 @@
-package internal
+package config
 
 import (
 	"errors"
@@ -37,39 +37,38 @@ var (
 
 func LoadConfig(path string) (err error) {
 	if len(path) == 0 {
-		path = "/etc/dynaport/config.yml"
+		path = "/etc/RePort/config.yml"
 	}
 
-	slog.Debug("[LoadConfig] getting config", "path", path)
+	slog.Debug("[Config] loading config", "path", path)
 	
 	_, err = os.Stat(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			slog.Warn("[LoadConfig] config does not exist", "path", path, "error", err)
+			slog.Warn("[Config] config does not exist", "path", path, "error", err)
 			createConfig(path)
 		}
 	}
 	
-	slog.Debug("[LoadConfig] reading config", "path", path)
 	f, err := os.ReadFile(path)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	c := &types.Config{}
 	err = yaml.Unmarshal(f, &c)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	config = c
-	slog.Debug("[LoadConfig] found config", "config", c)
+	slog.Debug("[Config] found config", "config", c)
 	return nil
 }
 
 func GetConfig() (c *types.Config) {
 	if config == nil {
-		slog.Error("[GetConfig] config not initialized", "config", c)
+		slog.Error("[Config] config not initialized", "config", c)
 		os.Exit(1)
 	}
 
@@ -77,17 +76,17 @@ func GetConfig() (c *types.Config) {
 }
 
 func createConfig(path string) {
-	slog.Debug("[createConfig] creating directory", "path", path)
+	slog.Debug("[Config] creating directory", "path", path)
 	dir := filepath.Dir(path)
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		slog.Error("[createConfig] failed to create directory", "error", err.Error())
+		slog.Error("[Config] failed to create directory", "error", err.Error())
 		os.Exit(1)
 	}
-	slog.Debug("[createConfig] writing default config", "path", path, "data", default_config)
+	slog.Debug("[Config] writing default config", "path", path, "data", default_config)
 	err = os.WriteFile(path, []byte(default_config), 0755)
 	if err != nil {
-		slog.Error("[createConfig] failed to create config", "error", err.Error())
+		slog.Error("[Config] failed to create config", "error", err.Error())
 		os.Exit(1)
 	}
 }

@@ -1,8 +1,11 @@
 package client
 
-import "log/slog"
+import (
+	"log/slog"
+)
+
 
 func Run() {
-	slog.Info("[Client] dynaport is alive!")
+	slog.Info("[Client] starting")
 	StartRelay()
 }
