@@ -48,7 +48,7 @@ func main() {
     
     slog.Info("[main] Starting " + mode)
 
-    internal.RunAllocator()
+    <- internal.RunAllocator()
     
 	if *serverMode {
 		server.Run()

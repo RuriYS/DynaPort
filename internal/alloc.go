@@ -10,16 +10,31 @@ import (
 )
 
 var (
-    cache	[]types.Allocation
-    mutex	sync.RWMutex
+    cache		[]types.Allocation
+    mutex		sync.RWMutex
+	interval	time.Duration
+	ready		chan struct{}
 )
 
-func RunAllocator() {
+func initialize() {
+	config := GetConfig()
+	var err error
+	interval, err = time.ParseDuration(config.Client.BroadcastInterval)
+	if err != nil {
+		slog.Error("[Allocator] initialization failed", "error", err)
+		return
+	}
+}
+
+func RunAllocator() chan struct{} {
+	ready = make(chan struct{})
 	go func ()  {
-		slog.Debug("[Allocator] initialized")
+		slog.Info("[Allocator] initializing")
+		initialize()
 		cache = getSockets()
 		slog.Debug("[Allocator] sockets cached", "cache", cache)
-		ticker := time.NewTicker(2 * time.Second)
+		close(ready)
+		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 		for {
 			<- ticker.C
@@ -31,6 +46,7 @@ func RunAllocator() {
 			mutex.Unlock()
 		}
 	}()
+	return ready
 }
 
 func GetAllocations() []types.Allocation {
