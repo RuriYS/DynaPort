@@ -43,7 +43,7 @@ func StartRelay() {
 			slog.Debug("[Relay] broadcasting socket", "socket", socket)
 			packet, err := send(conn, &socket, timeout)
 			if err != nil {
-				slog.Error("[Relay] failed to send packet", "error", err.Error(), "packet", packet)
+				slog.Error("[Relay] broadcast failed", "error", err.Error(), "packet", packet)
 				continue
 			}
 			if packet[0] == byte(types.OK) {
