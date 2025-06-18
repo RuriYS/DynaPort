@@ -16,14 +16,19 @@ var (
 
 func RunAllocator() {
 	go func ()  {
+		slog.Debug("[Allocator] initialized")
+		cache = getSockets()
+		slog.Debug("[Allocator] sockets cached", "cache", cache)
 		ticker := time.NewTicker(2 * time.Second)
 		defer ticker.Stop()
 		for {
 			<- ticker.C
+			slog.Debug("[Allocator] scanning for sockets")
 			allocs := getSockets()
+			slog.Debug("[Allocator] sockets found", "allocs", allocs)
 			mutex.Lock()
 			cache = allocs
-			mutex.Lock()
+			mutex.Unlock()
 		}
 	}()
 }

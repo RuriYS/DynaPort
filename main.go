@@ -48,6 +48,8 @@ func main() {
     
     slog.Info("[main] Starting " + mode)
 
+    internal.RunAllocator()
+    
 	if *serverMode {
 		server.Run()
 	} else if *clientMode {
