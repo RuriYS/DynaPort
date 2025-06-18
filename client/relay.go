@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -33,11 +34,25 @@ func StartRelay() {
 		sockets := internal.GetAllocations()
 		conn := connect(&serverAddr, interval)
 		if conn == nil {
+			slog.Error("[Relay] failed to connect", "error", err.Error())
 			continue
 		}
+		slog.Debug("[Relay] connected", "serverAddr", serverAddr, "broadcastPeriod", interval)
 
 		for _, socket := range sockets {
-			send(conn, &socket, timeout)
+			slog.Debug("[Relay] broadcasting socket", "socket", socket)
+			packet, err := send(conn, &socket, timeout)
+			if err != nil {
+				slog.Error("[Relay] failed to send packet", "error", err.Error(), "packet", packet)
+				continue
+			}
+			if packet[0] == byte(types.OK) {
+				slog.Info("[Relay] socket broadcasted", "socket", socket)
+			} else if packet[0] == byte(types.Allocated) {
+				slog.Warn("[Relay] port already allocated", "socket", socket)
+			}
+			
+			slog.Info("[Relay] socket broadcasted", "socket", socket)
 		}
 
 		conn.Close()
@@ -46,46 +61,42 @@ func StartRelay() {
 	}
 }
 
-func connect(serverAddr *net.UDPAddr, broadcastPeriod time.Duration) *net.UDPConn {
+func connect(serverAddr *net.UDPAddr, interval time.Duration) *net.UDPConn {
 	conn, err := net.DialUDP("udp", nil, serverAddr)
 	if err != nil {
-		slog.Error("[Relay::connect] failed to connect", "error", err.Error())
-		time.Sleep(broadcastPeriod)
+		time.Sleep(interval)
 		return nil
 	}
-	slog.Debug("[Relay::connect] connected", "serverAddr", serverAddr, "broadcastPeriod", broadcastPeriod)
 	return conn
 }
 
-func send(conn *net.UDPConn, socket *types.Allocation, timeout time.Duration) {
+func send(conn *net.UDPConn, socket *types.Allocation, timeout time.Duration) (packet []byte, err error) {
 	var protoByte byte
-		if socket.Protocol == types.TCP {
-			protoByte = 't'
-		} else {
-			protoByte = 'u'
-		}
+	if socket.Protocol == types.TCP {
+		protoByte = 't'
+	} else {
+		protoByte = 'u'
+	}
 
-		packet := make([]byte, 3)
-		packet[0] = protoByte
-		binary.BigEndian.PutUint16(packet[1:], socket.Port)
-		_, err := conn.Write(packet)
-		if err != nil {
-			slog.Error("[Relay::send] failed to send packet", "error", err.Error(), "packet", packet)
-			return
-		}
+	packet = make([]byte, 3)
+	packet[0] = protoByte
+	binary.BigEndian.PutUint16(packet[1:], socket.Port)
+	_, err = conn.Write(packet)
+	if err != nil {
+		return packet, err
+	}
 
-		conn.SetReadDeadline(time.Now().Add(timeout))
-		resp := make([]byte, 1)
-		n, _, err := conn.ReadFromUDP(resp)
-		if err != nil {
-			slog.Warn("[Relay::send] timed out", "error", err.Error())
-			return
-		}
+	conn.SetReadDeadline(time.Now().Add(timeout))
+	resp := make([]byte, 1)
+	n, _, err := conn.ReadFromUDP(resp)
+	if err != nil {
+		return packet, err
+	}
 
-		res := resp[:n]
-		if len(res) == 1 && res[0] == byte(types.OK) {
-			slog.Info("[Relay::send] port forwarded", "port", socket.Port, "protocol", socket.Protocol)
-		} else if len(res) == 1 && res[0] == byte(types.Allocated) {
-			slog.Debug("[Relay::send] port already allocated", "port", socket.Port, "protocol", socket.Protocol)
-		}
+	res := resp[:n]
+	if len(res) == 1 {
+		return res, nil
+	}
+
+	return res, errors.New("received invalid packet")
 }
