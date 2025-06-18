@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/RuriYS/DynaPort/client"
-	"github.com/RuriYS/DynaPort/internal"
-	"github.com/RuriYS/DynaPort/server"
+	"github.com/RuriYS/RePorter/client"
+	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/server"
 )
 
 func main() {

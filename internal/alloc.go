@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RuriYS/DynaPort/types"
-	"github.com/RuriYS/DynaPort/utils"
+	"github.com/RuriYS/RePorter/types"
+	"github.com/RuriYS/RePorter/utils"
 )
 
 var (

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/RePorter/types"
 	"github.com/cakturk/go-netstat/netstat"
 )
 

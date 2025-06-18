@@ -7,8 +7,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/RuriYS/DynaPort/internal"
-	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/types"
 )
 
 func StartRelay() {

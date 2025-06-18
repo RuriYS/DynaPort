@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/RuriYS/DynaPort/internal"
-	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/types"
 )
 
 var config *types.Config

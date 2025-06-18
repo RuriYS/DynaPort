@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/RePorter/types"
 	"gopkg.in/yaml.v3"
 )
 

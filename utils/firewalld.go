@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/RuriYS/DynaPort/types"
+	"github.com/RuriYS/RePorter/types"
 )
 
 func ForwardPort(addr string, port uint16, proto types.Protocol) error {

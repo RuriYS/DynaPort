@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"net"
 
-	"github.com/RuriYS/DynaPort/internal"
-	"github.com/RuriYS/DynaPort/types"
-	"github.com/RuriYS/DynaPort/utils"
+	"github.com/RuriYS/RePorter/internal"
+	"github.com/RuriYS/RePorter/types"
+	"github.com/RuriYS/RePorter/utils"
 )
 
 var allowedIPs map[string]struct{}

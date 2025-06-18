@@ -1,38 +1,38 @@
-# DynaPort
+# RePorter
 A simple, fast, efficient dynamic port forwarder for Linux proxies written in Go.
 
 ## Prerequisites
 - Go 1.23+
 - A Linux server with a public IP
 - Private network with your peers
-- firewalld (I'll try to add iptables support later)
+- Firewall (firewalld)
 
-## Roadmap
+## Usage
+```bash
+RePorter --server # server mode
+RePorter --client # client mode
+```
+
+## Features
+- [x] Dynamic port forwarding
 - [x] Server Implementations
   - [x] Scan sockets
   - [x] Parse sockets
   - [x] Manage forwarded ports
   - [x] Service daemon
+  - [x] Allowlists/Denylists
   - [ ] TTL
-  - [ ] Allowlists/Denylists
   - [ ] Web Interface
   - [ ] CLI Interface
 - [x] Client Implementations
   - [x] Scan sockets
   - [x] Broadcast open sockets
-  - [x] Service daemon
   - [ ] Broadcast closed sockets
+  - [x] Service daemon
   - [ ] Web Interface
   - [ ] CLI Interface
-- [x] Dynamic Configuration
 
-## Usage
-```bash
-DynaPort --server # server mode
-DynaPort --client # client mode
-```
-
-For now, it forwards every open port in the client, and no way of reverting it, but it's not permanent.
+Currently, all opened sockets are broadcasted to the proxy server, and can't be closed by the client.
 
 ## License
 This project is licensed under the AGPL v3 License. See the [LICENSE](LICENSE.md) file for details.
