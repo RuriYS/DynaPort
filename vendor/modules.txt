@@ -1,0 +1,6 @@
+# github.com/cakturk/go-netstat v0.0.0-20200220111822-e5b49efee7a5
+## explicit; go 1.13
+github.com/cakturk/go-netstat/netstat
+# gopkg.in/yaml.v3 v3.0.1
+## explicit
+gopkg.in/yaml.v3
