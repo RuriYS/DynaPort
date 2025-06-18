@@ -24,6 +24,15 @@ func initialize() {
 		slog.Error("[Sockit] initialization failed", "error", err)
 		return
 	}
+	cache, err = getSockets()
+	if err != nil {
+		slog.Error("[Sockit] failed to get initial sockets", "error", err)
+		return
+	}
+	if len(cache) == 0 {
+		slog.Warn("[Sockit] no sockets found, will retry in the next interval")
+		return
+	}
 }
 
 func Run() chan struct{} {
@@ -31,20 +40,24 @@ func Run() chan struct{} {
 	go func ()  {
 		slog.Info("[Sockit] initializing")
 		initialize()
-		cache = getSockets()
-		slog.Debug("[Sockit] sockets cached", "cache", cache)
 		close(ready)
+		
 		tickDuration := interval - time.Second
 		if tickDuration < time.Second {
 			tickDuration = time.Second
 			slog.Warn("[Sockit] interval too short, using minimum 1s ticker")
 		}
 		ticker := time.NewTicker(tickDuration)
+		
 		defer ticker.Stop()
 		for {
 			<- ticker.C
 			slog.Debug("[Sockit] scanning for sockets")
-			allocs := getSockets()
+			allocs, err := getSockets()
+			if err != nil {
+				slog.Error("failed to get allocations", "error", err.Error())
+				continue
+			}
 			slog.Debug("[Sockit] sockets found", "allocs", allocs)
 			mutex.Lock()
 			cache = allocs
@@ -60,11 +73,10 @@ func GetAll() []types.Allocation {
 	return cache
 }
 
-func getSockets() []types.Allocation {
-	allocs, err := GetSocks()
+func getSockets() (allocs []types.Allocation, err error) {
+	allocs, err = GetSocks()
 	if err != nil {
-		slog.Error("failed to get allocations", "error", err.Error())
-		return nil
+		return nil, err
 	}
-	return allocs
+	return allocs, nil
 }
